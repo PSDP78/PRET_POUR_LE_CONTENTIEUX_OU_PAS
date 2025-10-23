@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Arbre décisionnel — Prêt pour le contentieux ? Parcours guidé pour savoir quoi faire selon les variables." />
+  <title>PRET POUR LE CONTENTIEUX ?</title>
+  <style>
+    :root{
+      --bg:#0f172a; /* slate-900 */
+      --card:#111827ee; /* gray-900 */
+      --muted:#94a3b8; /* slate-400 */
+      --text:#e5e7eb; /* gray-200 */
+      --accent:#22d3ee; /* cyan-400 */
+      --accent-2:#38bdf8; /* sky-400 */
+      --danger:#f97316; /* orange-500 */
+      --ok:#10b981; /* emerald-500 */
+      --border:rgba(148,163,184,.25);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; padding:24px; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 900px at 10% -10%, #0ea5e9 0%, transparent 45%),
+                  radial-gradient(800px 700px at 110% 10%, #22d3ee 0%, transparent 35%),
+                  var(--bg);
+      color:var(--text);
+    }
+    .container{max-width:900px; margin:0 auto}
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow);
+      overflow:hidden
+    }
+    header{
+      display:flex; align-items:center; justify-content:space-between; gap:12px; padding:24px; border-bottom:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(34,211,238,0.08), transparent);
+    }
+    .title{font-weight:800; letter-spacing:.4px; font-size: clamp(1.2rem, 2vw + .6rem, 2rem)}
+    .subtitle{color:var(--muted); font-size:.95rem}
+    .controls{display:flex; gap:10px; flex-wrap:wrap}
+    button{
+      appearance:none; border:none; border-radius:12px; padding:12px 16px; font-weight:700; cursor:pointer;
+      color:#071521; background:#e6faff; border:1px solid rgba(56,189,248,.25); transition:.2s transform, .2s opacity, .2s box-shadow;
+    }
+    button:hover{transform:translateY(-1px)}
+    button:active{transform:translateY(0)}
+    .btn-secondary{background:transparent; color:var(--text); border:1px solid var(--border)}
+    .btn-danger{background:rgba(249,115,22,.12); color:#ffd7bf; border-color:rgba(249,115,22,.35)}
+    .btn-neutral{background:rgba(148,163,184,.12); color:#e2e8f0; border-color:rgba(148,163,184,.35)}
+    .badge{display:inline-flex; align-items:center; gap:8px; font-size:.85rem; color:#0c4a6e; background:#ccfbf1; border:1px solid rgba(16,185,129,.35); padding:6px 10px; border-radius:999px}
+    .content{padding:24px}
+    .step{display:grid; gap:16px}
+    .step-index{font-size:.85rem; color:var(--muted)}
+    .question{font-size: clamp(1.05rem, 0.8rem + .9vw, 1.4rem); font-weight:700; line-height:1.35}
+    .choices{display:flex; gap:12px; flex-wrap:wrap}
+    .choice{font-size:1rem}
+    .panel{
+      border:1px dashed var(--border); border-radius:14px; padding:18px; background:linear-gradient(180deg, rgba(148,163,184,.12), rgba(148,163,184,.06));
+    }
+    .panel h4{margin:.2rem 0 .6rem; font-size:1.05rem}
+    .panel ul{margin:.2rem 0 .2rem 1rem; padding:0}
+    .panel li{margin:.35rem 0}
+    .final{
+      border:1px solid rgba(16,185,129,.4); background:linear-gradient(180deg, rgba(16,185,129,.15), rgba(16,185,129,.07));
+    }
+    .stack{
+      display:flex; gap:8px; flex-wrap:wrap; margin-top:6px
+    }
+    .chip{font-size:.8rem; padding:6px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted)}
+    .footer{display:flex; align-items:center; justify-content:space-between; padding:18px 24px; border-top:1px solid var(--border);}
+    .hint{color:var(--muted); font-size:.9rem}
+    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:.85rem; border:1px solid var(--border); padding:2px 6px; border-radius:6px; color:#cbd5e1}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card" role="region" aria-label="Arbre décisionnel">
+      <header>
+        <div>
+          <div class="title">PRET POUR LE CONTENTIEUX ?</div>
+          <div class="subtitle">Voix Off – Parcours de traitement pour passage d’un dossier au contentieux (hors organismes publics)</div>
+          <div class="stack" id="breadcrumb" aria-live="polite"></div>
+        </div>
+        <div class="controls">
+          <button id="btn-back" class="btn-secondary" title="Revenir à l’étape précédente (Alt+←)">⟵ RETOUR</button>
+          <button id="btn-reset" class="btn-danger" title="Réinitialiser l’arbre (Alt+R)">REINITIALISER</button>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="step" id="step"></div>
+      </div>
+
+      <div class="footer">
+        <span class="hint">Astuce : utilisez <span class="kbd">O</span>/<span class="kbd">N</span> pour Oui/Non, <span class="kbd">Alt</span>+<span class="kbd">←</span> pour RETOUR, <span class="kbd">Alt</span>+<span class="kbd">R</span> pour REINITIALISER.</span>
+        <span class="badge" id="status">En cours</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Modèle de données de l'arbre
+    const FLOW = [
+      {
+        id: 1,
+        type: 'info',
+        title: 'Étape 1 : Réception du dossier',
+        text: 'Le processus commence dès la réception d’un dossier pour passage au contentieux.',
+        next: 2
+      },
+      {
+        id: 2,
+        title: 'Étape 2 : Vérifier la divergence entre facture et contrat',
+        question: 'Y a-t-il une divergence entre la facture et le contrat ?',
+        yes: {
+          actionTitle: 'Si OUI :',
+          actions: [
+            'Créez une requête interne dans N3 Finance.',
+            'Le gestionnaire contentieux reporte le traitement sur l’agenda.',
+            'N3 Finance prend en charge la résolution.'
+          ],
+          end: true
+        },
+        no: { next: 3 }
+      },
+      {
+        id: 3,
+        title: 'Étape 3 : Vérifier la procédure judiciaire ou notariale',
+        question: 'Une procédure judiciaire ou notariale est-elle en cours ?',
+        yes: {
+          actionTitle: 'Si OUI :',
+          actions: [
+            'Créez une requête affectée à la personne en charge pour prioriser le traitement.',
+            'Le gestionnaire reporte sur l’agenda.',
+            'N3 Finance traite la requête.'
+          ],
+          end: true
+        },
+        no: { next: 4 }
+      },
+      {
+        id: 4,
+        title: 'Étape 4 : Une requête est-elle en cours ?',
+        question: 'Une requête est-elle en cours ?',
+        yes: {
+          actionTitle: 'Si OUI :',
+          actions: [
+            'Créez une requête sur file d’attente et affectez-la au manager pour priorisation.',
+            'Reportez sur l’agenda.',
+            'La Relation client s\'occupera de traiter et de solutionner la requête.'
+          ],
+          end: true
+        },
+        no: { next: 5 }
+      },
+      {
+        id: 5,
+        title: 'Étape 5 : Absence de précontentieux ?',
+        question: 'Absence de précontentieux ?',
+        yes: {
+          actionTitle: 'Si OUI :',
+          actions: [
+            'Créez une requête demande interne N3 Finance.',
+            'Reportez le traitement sur l’agenda.'
+          ],
+          end: true
+        },
+        no: { next: 6 }
+      },
+      {
+        id: 6,
+        title: 'Étape 6 : Précontentieux en cours ?',
+        question: 'Précontentieux en cours ?',
+        yes: {
+          actionTitle: 'Si OUI :',
+          actions: [ 'Le dossier passe en précontentieux.' ],
+          end: true
+        },
+        no: { next: 7 }
+      },
+      {
+        id: 7,
+        title: 'Étape 7 : Vérifier le débit différé (Sidetraque/SAP/RecoCash)',
+        question: 'Débit différé (Sidetraque / SAP / RecoCash) ?',
+        yes: {
+          actionTitle: 'Si OUI :',
+          actions: [ 'Effectuez le règlement RecoCash et attendez la mise à jour Sidetraque si besoin.' ],
+          next: 8
+        },
+        no: { next: 8 }
+      },
+      {
+        id: 8,
+        title: 'Étape 8 : Produits en parution ?',
+        question: 'Produits en parution ?',
+        yes: {
+          actionTitle: 'Si OUI :',
+          actions: [ 'Procédez à l’arrêt de tous les produits et clôturez le SMS**.' ],
+          next: 9
+        },
+        no: { next: 9 }
+      },
+      {
+        id: 9,
+        title: 'Étape 9 : Lettrage à effectuer ou PB en attente ?',
+        question: 'Lettrage à effectuer ou PB en attente ?',
+        yes: {
+          actionTitle: 'Si OUI :',
+          actions: [ 'Effectuez le lettrage et annulez le ZRM en cours ou le PB en cours ou encore le P8**.' ],
+          next: 10
+        },
+        no: { next: 10 }
+      },
+      {
+        id: 10,
+        title: 'Étape 10 : ZRM en cours ?',
+        question: 'ZRM en cours ?',
+        yes: {
+          actionTitle: 'Si OUI :',
+          actions: [ 'Annulez le ZRM en cours.' ],
+          next: 'FINAL'
+        },
+        no: { next: 'FINAL' }
+      },
+      {
+        id: 'FINAL',
+        type: 'final',
+        title: 'Étape finale : Passage au contentieux',
+        text: 'Une fois toutes ces vérifications et actions effectuées, le dossier peut être transmis au contentieux.'
+      }
+    ];
+
+    // État de l'interface
+    const state = {
+      currentId: 1,
+      selection: null, // 'yes' | 'no' | null
+      history: [] // { id, selection }
+    };
+
+    const elStep = document.getElementById('step');
+    const elBreadcrumb = document.getElementById('breadcrumb');
+    const elBack = document.getElementById('btn-back');
+    const elReset = document.getElementById('btn-reset');
+    const elStatus = document.getElementById('status');
+
+    function getNode(id){
+      return FLOW.find(n => n.id === id);
+    }
+
+    function setStatus(text, ok=false){
+      elStatus.textContent = text;
+      elStatus.style.borderColor = ok ? 'rgba(16,185,129,.4)' : 'rgba(56,189,248,.35)';
+      elStatus.style.background = ok ? 'rgba(16,185,129,.15)' : '#ccfbf1';
+      elStatus.style.color = ok ? '#d1fae5' : '#0c4a6e';
+    }
+
+    function renderBreadcrumb(){
+      const items = state.history.map(h => {
+        const n = getNode(h.id);
+        const label = `${(n.title||'Étape')} · ${h.selection ? (h.selection==='yes'?'Oui':'Non') : ''}`.trim();
+        return `<span class="chip" title="${n.title}">${label}</span>`;
+      }).join('');
+      elBreadcrumb.innerHTML = items;
+    }
+
+    function render(){
+      const node = getNode(state.currentId);
+      renderBreadcrumb();
+      if(node.type === 'final'){
+        elStep.innerHTML = `
+          <div class="panel final" role="status" aria-live="polite">
+            <h3 class="question">${node.title}</h3>
+            <p>${node.text}</p>
+          </div>
+        `;
+        setStatus('Terminé', true);
+        return;
+      }
+
+      if(node.type === 'info'){
+        elStep.innerHTML = `
+          <div class="step">
+            <div class="step-index">${node.title}</div>
+            <div class="panel"><p>${node.text}</p></div>
+            <div class="choices">
+              <button class="choice" data-action="continue">Commencer ⟶</button>
+            </div>
+          </div>
+        `;
+        setStatus('En cours');
+        return;
+      }
+
+      // Question node
+      const selection = state.selection; // null | 'yes' | 'no'
+      const questionHTML = `
+        <div class="step">
+          <div class="step-index">${node.title}</div>
+          <div class="question">${node.question}</div>
+          ${selection === null ? `
+            <div class="choices" role="group" aria-label="Choix Oui/Non">
+              <button class="choice" data-answer="yes" autofocus>Oui</button>
+              <button class="choice btn-neutral" data-answer="no">Non</button>
+            </div>
+          ` : ''}
+          ${selection !== null ? renderActionPanel(node, selection) : ''}
+        </div>
+      `;
+      elStep.innerHTML = questionHTML;
+      setStatus('En cours');
+    }
+
+    function renderActionPanel(node, selection){
+      const branch = node[selection];
+      const actionsList = branch.actions ? `<ul>${branch.actions.map(a => `<li>${a}</li>`).join('')}</ul>` : '';
+      const nextLabel = branch.end ? 'Fin du parcours' : 'Continuer';
+      return `
+        <div class="panel" aria-live="polite">
+          <h4>${branch.actionTitle || 'Actions :'}</h4>
+          ${actionsList}
+          <div class="choices" style="margin-top:10px">
+            ${branch.end ? '' : `<button class="choice" data-action="next">${nextLabel} ⟶</button>`}
+            ${branch.end ? `<button class="choice" data-action="finish">${nextLabel} ⟶</button>` : ''}
+            <button class="choice btn-secondary" data-action="undo">Modifier le choix (RETOUR)</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Gestion des clics
+    document.getElementById('step').addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if(!btn) return;
+
+      const node = getNode(state.currentId);
+
+      if(btn.dataset.action === 'continue'){
+        state.history.push({ id: state.currentId, selection: null });
+        state.currentId = node.next;
+        state.selection = null;
+        render();
+        return;
+      }
+
+      if(btn.dataset.answer){
+        state.selection = btn.dataset.answer; // 'yes' | 'no'
+        render();
+        return;
+      }
+
+      if(btn.dataset.action === 'undo'){
+        state.selection = null;
+        render();
+        return;
+      }
+
+      if(btn.dataset.action === 'next'){
+        // on fige le choix dans l'historique avant d'avancer
+        state.history.push({ id: state.currentId, selection: state.selection });
+        const next = node[state.selection].next;
+        state.currentId = next;
+        state.selection = null;
+        render();
+        return;
+      }
+
+      if(btn.dataset.action === 'finish'){
+        state.history.push({ id: state.currentId, selection: state.selection });
+        state.currentId = 'FINAL';
+        state.selection = null;
+        render();
+        return;
+      }
+    });
+
+    // Boutons globaux
+    document.getElementById('btn-back').addEventListener('click', goBack);
+    document.getElementById('btn-reset').addEventListener('click', resetFlow);
+
+    function goBack(){
+      // Si un choix est affiché, on l'annule d'abord
+      if(state.selection !== null){
+        state.selection = null;
+        render();
+        return;
+      }
+      // Sinon, on revient à l'élément d'historique précédent
+      const prev = state.history.pop();
+      if(!prev){ return; }
+      state.currentId = prev.id;
+      state.selection = null; // permettre de refaire le choix
+      render();
+    }
+
+    function resetFlow(){
+      state.currentId = 1;
+      state.selection = null;
+      state.history = [];
+      render();
+    }
+
+    // Raccourcis clavier
+    window.addEventListener('keydown', (e) => {
+      if(e.altKey && e.key === 'ArrowLeft'){ e.preventDefault(); goBack(); }
+      if(e.altKey && (e.key === 'r' || e.key === 'R')){ e.preventDefault(); resetFlow(); }
+
+      const node = getNode(state.currentId);
+      if(node && !node.type && state.selection === null){
+        if(e.key === 'o' || e.key === 'O' || e.key === 'Enter'){
+          // Oui par défaut sur Enter
+          e.preventDefault();
+          state.selection = 'yes';
+          render();
+        }
+        if(e.key === 'n' || e.key === 'N'){
+          e.preventDefault();
+          state.selection = 'no';
+          render();
+        }
+      }
+    });
+
+    // Initialisation
+    render();
+  </script>
+</body>
+</html>
