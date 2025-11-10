@@ -45,8 +45,9 @@
       appearance:none; border:none; border-radius:12px; padding:12px 16px; font-weight:700; cursor:pointer;
       color:#071521; background:#e6faff; border:1px solid rgba(56,189,248,.25); transition:.2s transform, .2s opacity, .2s box-shadow;
     }
-    button:hover{transform:translateY(-1px)}
-    button:active{transform:translateY(0)}
+    button:hover:not([disabled]){transform:translateY(-1px)}
+    button:active:not([disabled]){transform:translateY(0)}
+    button[disabled]{opacity:.6; cursor:not-allowed; pointer-events:none}
     .btn-secondary{background:transparent; color:var(--text); border:1px solid var(--border)}
     .btn-danger{background:rgba(249,115,22,.12); color:#ffd7bf; border-color:rgba(249,115,22,.35)}
     .btn-neutral{background:rgba(148,163,184,.12); color:#e2e8f0; border-color:rgba(148,163,184,.35)}
@@ -103,7 +104,7 @@
   </div>
 
   <script>
-    // Modèle de données de l'arbre
+    // Modèle de données de l'arbre (cohérent métier)
     const FLOW = [
       {
         id: 1,
@@ -120,8 +121,7 @@
           actionTitle: 'Si OUI :',
           actions: [
             'Créez une requête interne dans N3 Finance.',
-            'Le gestionnaire contentieux reporte le traitement sur l’agenda.',
-            'N3 Finance prend en charge la résolution.'
+            'N3 Finance prend en charge le traitement. Pas d’autre action attendue.'
           ],
           end: true
         },
@@ -129,14 +129,13 @@
       },
       {
         id: 3,
-        title: 'Étape 3 : Vérifier la procédure judiciaire ou notariale',
-        question: 'Une procédure judiciaire ou notariale est-elle en cours ?',
+        title: 'Étape 3 : Procédure judiciaire ou note Créditsafe < 80',
+        question: 'Y a-t-il une procédure judiciaire en cours ou une note Créditsafe inférieure à 80 ? ',
         yes: {
           actionTitle: 'Si OUI :',
           actions: [
-            'Créez une requête affectée à la personne en charge pour prioriser le traitement.',
-            'Le gestionnaire reporte sur l’agenda.',
-            'N3 Finance traite la requête.'
+            'Créez une requête interne dans N3 Finance.',
+            'N3 Finance prend en charge le traitement. Pas d’autre action attendue.'
           ],
           end: true
         },
@@ -144,28 +143,29 @@
       },
       {
         id: 4,
-        title: 'Étape 4 : Une requête est-elle en cours ?',
+        title: 'Étape 4 : Requêtes en cours (CRM)',
         question: 'Une requête est-elle en cours ?',
         yes: {
           actionTitle: 'Si OUI :',
           actions: [
-            'Créez une requête sur file d’attente et affectez-la au manager pour priorisation.',
-            'Reportez sur l’agenda.',
-            'La Relation client s\'occupera de traiter et de solutionner la requête.'
+            'Cas 1 — La requête est affectée à une personne : envoyer un message au propriétaire via le fil Chatter pour prioriser le traitement.',
+            'Cas 2 — La requête est sur une file d’attente : faire une escalade au Manager Relation Client pour prioriser.',
+            'Dans les deux cas : reporter le passage au contentieux sur l’agenda Sidetrade en attendant que le Responsable Relation Client traite la requête. Une fois traitée, passez à l’étape suivante.'
           ],
-          end: true
+          next: 5
         },
         no: { next: 5 }
       },
       {
         id: 5,
-        title: 'Étape 5 : Absence de précontentieux ?',
-        question: 'Absence de précontentieux ?',
+        title: 'Étape 5 : Absence de précontentieux',
+        question: 'Il n’y a pas de précontentieux ?',
         yes: {
           actionTitle: 'Si OUI :',
           actions: [
-            'Créez une requête demande interne N3 Finance.',
-            'Reportez le traitement sur l’agenda.'
+            'Créez une requête « demande interne N3 Finance ».',
+            'N3 Finance prendra en charge le passage du dossier au précontentieux.',
+            'Il n’y a pas d’autre action à faire tant que le dossier est au précontentieux.'
           ],
           end: true
         },
@@ -173,55 +173,58 @@
       },
       {
         id: 6,
-        title: 'Étape 6 : Précontentieux en cours ?',
-        question: 'Précontentieux en cours ?',
+        title: 'Étape 6 : Précontentieux en cours',
+        question: 'Y a-t-il un précontentieux en cours ?',
         yes: {
           actionTitle: 'Si OUI :',
-          actions: [ 'Le dossier passe en précontentieux.' ],
+          actions: [ 'Reporter le passage au contentieux sur l’agenda Sidetrade.' ],
           end: true
         },
         no: { next: 7 }
       },
       {
         id: 7,
-        title: 'Étape 7 : Vérifier le débit différé (Sidetraque/SAP/RecoCash)',
-        question: 'Débit différé (Sidetraque / SAP / RecoCash) ?',
+        title: 'Étape 7 : Montant du débit (Sidetrade / SAP / Recocash)',
+        question: 'Y a-t-il une différence du solde débiteur présent sur Sidetrade, SAP et Recocash ?',
         yes: {
           actionTitle: 'Si OUI :',
-          actions: [ 'Effectuez le règlement RecoCash et attendez la mise à jour Sidetraque si besoin.' ],
+          actions: [
+            'Cas 1 — Le règlement client reçu par Recocash n’est pas présent dans Sidetrade : faire une requête auprès du N3 Finance. N3 Finance régularise le dossier. Pas d’autre action à effectuer.',
+            'Cas 2 — Le règlement a été reçu récemment et intégré dans SAP : attendre 48 heures pour l’interface vers Sidetrade.'
+          ],
           next: 8
         },
         no: { next: 8 }
       },
       {
         id: 8,
-        title: 'Étape 8 : Produits en parution ?',
-        question: 'Produits en parution ?',
+        title: 'Étape 8 : Produits en parution',
+        question: 'Y a-t-il des produits en parution ?',
         yes: {
           actionTitle: 'Si OUI :',
-          actions: [ 'Procédez à l’arrêt de tous les produits et clôturez le SMS**.' ],
+          actions: [ 'Procéder aux résiliations de tous les produits Solocal et SOMS.' ],
           next: 9
         },
         no: { next: 9 }
       },
       {
         id: 9,
-        title: 'Étape 9 : Lettrage à effectuer ou PB en attente ?',
-        question: 'Lettrage à effectuer ou PB en attente ?',
+        title: 'Étape 9 : Lettrage ou PB en attente',
+        question: 'Existe-t-il un lettrage à effectuer ou un prélèvement bancaire (PB) en cours ?',
         yes: {
           actionTitle: 'Si OUI :',
-          actions: [ 'Effectuez le lettrage et annulez le ZRM en cours ou le PB en cours ou encore le P8**.' ],
+          actions: [ 'Effectuer le lettrage et/ou attendre le retour du PB en cours, ou annuler le PB.' ],
           next: 10
         },
         no: { next: 10 }
       },
       {
         id: 10,
-        title: 'Étape 10 : ZRM en cours ?',
-        question: 'ZRM en cours ?',
+        title: 'Étape 10 : ZRM en cours (remises partielles ou totales)',
+        question: 'Y a-t-il un ZRM en cours ?',
         yes: {
           actionTitle: 'Si OUI :',
-          actions: [ 'Annulez le ZRM en cours.' ],
+          actions: [ 'Annuler tous les ZRM en cours.' ],
           next: 'FINAL'
         },
         no: { next: 'FINAL' }
@@ -323,8 +326,9 @@
           <h4>${branch.actionTitle || 'Actions :'}</h4>
           ${actionsList}
           <div class="choices" style="margin-top:10px">
-            ${branch.end ? '' : `<button class="choice" data-action="next">${nextLabel} ⟶</button>`}
-            ${branch.end ? `<button class="choice" data-action="finish">${nextLabel} ⟶</button>` : ''}
+            ${branch.end
+              ? `<button class="choice btn-neutral" disabled aria-disabled="true" title="Fin du parcours">${nextLabel}</button>`
+              : `<button class="choice" data-action="next">${nextLabel} ⟶</button>`}
             <button class="choice btn-secondary" data-action="undo">Modifier le choix (RETOUR)</button>
           </div>
         </div>
@@ -368,13 +372,7 @@
         return;
       }
 
-      if(btn.dataset.action === 'finish'){
-        state.history.push({ id: state.currentId, selection: state.selection });
-        state.currentId = 'FINAL';
-        state.selection = null;
-        render();
-        return;
-      }
+      // pas d'action 'finish' : le bouton Fin du parcours est désactivé et non cliquable
     });
 
     // Boutons globaux
